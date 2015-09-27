@@ -41,6 +41,8 @@ public class mongoprog{
     read_from_db();
     TimeUnit.SECONDS.sleep(3);
     update_db();
+    TimeUnit.SECONDS.sleep(3);
+    delete_db_records();
 
   }
 
@@ -87,7 +89,7 @@ public class mongoprog{
 
     Scanner in = new Scanner(System.in);
     int choice;
-    System.out.print("Reading from Database\n 1. 1-by-1\n 2. Bulk\n Enter your choice : ");
+    System.out.print("\n\n Reading from Database\n 1. 1-by-1\n 2. Bulk\n Enter your choice : ");
     choice = in.nextInt();
 
     switch(choice){
@@ -129,7 +131,7 @@ public class mongoprog{
 
     Scanner in = new Scanner(System.in);
     int choice;
-    System.out.print("Database Update\n 1. 1-by-1\n 2. Bulk\n 3. Replace\n Enter your choice : ");
+    System.out.print("\n\n Database Update\n 1. 1-by-1\n 2. Bulk\n 3. Replace\n Enter your choice : ");
     choice = in.nextInt();
 
     long starttime,endtime;
@@ -158,6 +160,37 @@ public class mongoprog{
 
   }
 
+  // DELETE DATABASE
+  public static void delete_db_records(){
+
+    MongoClient mongo_read = new MongoClient();
+    MongoCollection<Document> delete_collection = mongo_read.getDatabase(write_database).getCollection(write_collection);
+
+    Scanner in = new Scanner(System.in);
+    int choice;
+    System.out.print("\n\n Database Delete Operations\n 1. 1-by-1\n 2. Bulk\n Enter your choice : ");
+    choice = in.nextInt();
+
+    long starttime,endtime;
+
+    switch(choice){
+      case 1: System.out.println("Delete Database 1-BY-1");
+              starttime = System.currentTimeMillis();
+              while(delete_collection.deleteOne(new Document()).getDeletedCount()!=0);
+              endtime = System.currentTimeMillis();
+              System.out.println(" Total time to delete all records 1-BY-1 = " + (float) (endtime-starttime)/1000 + " seconds");
+              break;
+      case 2: System.out.println("Delete Database BULK");
+              starttime = System.currentTimeMillis();
+              delete_collection.deleteMany(new Document());
+              endtime = System.currentTimeMillis();
+              System.out.println(" Total time to delete all records BULK = " + (float) (endtime-starttime)/1000 + " seconds");
+              break;
+    default:  System.out.println("Wrong choice");
+
+    }
+
+  }
 
 
 }
