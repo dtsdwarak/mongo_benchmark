@@ -5,6 +5,8 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.Block;
+import com.mongodb.client.FindIterable;
 
 import org.bson.Document; //For Document type
 import static com.mongodb.client.model.Filters.*;
@@ -78,23 +80,45 @@ public class mongoprog{
   public static void read_from_db(){
 
     MongoClient mongo_read = new MongoClient();
-    MongoCursor<Document> read_cursor = mongo_read.getDatabase(write_database).getCollection(write_collection).find().iterator();
+    MongoCollection<Document> mongo_read_collection = mongo_read.getDatabase(write_database).getCollection(write_collection);
+
 
     long totaltime=0,starttime,endtime;
 
-    System.out.println("Reading From Database");
+    Scanner in = new Scanner(System.in);
+    int choice;
+    System.out.print("Reading from Database\n 1. 1-by-1\n 2. Bulk\n Enter your choice : ");
+    choice = in.nextInt();
 
-    while(read_cursor.hasNext()){
-      starttime = System.currentTimeMillis();
-      JSONObject JSON_DATA = new JSONObject (read_cursor.next().toJson());
-      System.out.println("Value = "+ JSON_DATA.getJSONObject("user").getString("name"));
-      endtime = System.currentTimeMillis();
-      totaltime += endtime - starttime;
+    switch(choice){
+      case 1: System.out.println("Reading Database 1-BY-1");
+              MongoCursor<Document> read_cursor = mongo_read_collection.find().iterator();
+              while(read_cursor.hasNext()){
+                starttime = System.currentTimeMillis();
+                JSONObject JSON_DATA = new JSONObject (read_cursor.next().toJson());
+                System.out.println("Value = "+ JSON_DATA.getJSONObject("user").getString("name"));
+                endtime = System.currentTimeMillis();
+                totaltime += endtime - starttime;
+              }
+              read_cursor.close();
+              System.out.println("Total Time to read records 1-BY-1 = " + (float) totaltime/1000 + " seconds");
+              break;
+      case 2: System.out.println("Reading Database in BULK");
+              starttime = System.currentTimeMillis();
+              FindIterable<Document> iterable = mongo_read_collection.find();
+              endtime = System.currentTimeMillis();
+              iterable.forEach(new Block<Document>() {
+                  @Override
+                  public void apply(final Document document) {
+                      JSONObject JSON_DATA = new JSONObject (document.toJson());
+                      System.out.println("Value = "+ JSON_DATA.getJSONObject("user").getString("name"));                  }
+              });
+              System.out.println("Total Time to read records BULK = " + (float) (endtime - starttime)/1000 + " seconds");
+              break;
+    default:  System.out.println("\n Wrong choice");
     }
 
-    System.out.println("Total Time to read records = " + (float) totaltime/1000 + " seconds");
-    read_cursor.close();
-    //Reading Queries done
+  //Reading Queries done
   }
 
   // UPDATE THE DATABASE
