@@ -196,7 +196,7 @@ public class mongoprog2{
                starttime = System.currentTimeMillis();
 
                while(object_iterator.hasNext()){
-                 update_collection.replaceOne( new Document("_id",object_iterator.next()), new Document("$set",new Document("id","NumberLong(100101102103104105)")) );
+                 update_collection.replaceOne( new Document("_id",object_iterator.next()), new Document("id","NumberLong(100101102103104105)") );
                }
 
                endtime = System.currentTimeMillis();
