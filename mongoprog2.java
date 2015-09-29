@@ -1,5 +1,5 @@
 //javac -classpath library/*:. mongoprog2.java
-//java -classpath library/*:. mongoprog2 twitter aaron backup aaron
+//java -classpath library/*:. mongoprog2 twitter aaron backup aaron localhost 27017 100
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
@@ -12,54 +12,60 @@ import org.bson.Document; //For Document type
 import static com.mongodb.client.model.Filters.*;
 import org.bson.types.ObjectId; //For ObjectID store
 
-//Java packages
+//Java Packages
 import java.util.concurrent.TimeUnit; //For Time Wait
 import java.util.Scanner;
 import java.util.ArrayList; //For objectID store
 import java.util.Iterator;
+import java.lang.Integer;
 
 //Json Packages
 import org.json.JSONObject;
 
 public class mongoprog2{
 
-  //Database parameters
+  //Connection parameters
   public static String read_database;
   public static String read_collection;
   public static String write_database;
   public static String write_collection;
+  public static String host_ip;
+  public static int host_port;
+  public static int no_of_records;
 
   //ObjectID store
   public static ArrayList<ObjectId> object_id_store = new ArrayList<ObjectId>();
 
   public static void main(String[] args) throws Exception  {
 
-    if(args.length<4){
+    if(args.length<7){
       System.out.println("Database parameters not given. Quitting");
       return;
     }
+
     //Assign parameters to Database
-    read_database = args[0]; read_collection = args[1]; write_database = args[2]; write_collection = args[3];
+    read_database = args[0]; read_collection = args[1]; write_database = args[2]; write_collection = args[3]; host_ip = args[4]; host_port = Integer.parseInt(args[5]); no_of_records = Integer.parseInt(args[6]);
 
     write_to_db();
+    /*
     TimeUnit.SECONDS.sleep(3);
     read_from_db();
     TimeUnit.SECONDS.sleep(3);
     update_db();
     TimeUnit.SECONDS.sleep(3);
     delete_db_records();
-
+    */
   }
 
   // WRITE TO DATABASE
   public static void write_to_db(){
 
     //Properties for READ Database -  author_backup
-    MongoClient mongo_read = new MongoClient("172.50.88.22",27020);
-    MongoCursor<Document> read_cursor = mongo_read.getDatabase(read_database).getCollection(read_collection).find().limit(1000).iterator();
+    MongoClient mongo_read = new MongoClient("localhost",27017);
+    MongoCursor<Document> read_cursor = mongo_read.getDatabase(read_database).getCollection(read_collection).find().limit(no_of_records).iterator();
 
     //Properties for WRITE Database - authors
-    MongoClient mongo_write = new MongoClient("172.50.88.22",27020);
+    MongoClient mongo_write = new MongoClient(host_ip,host_port);
     MongoDatabase write_db = mongo_write.getDatabase(write_database);
 
     //Deleting the exisiting WRITE datatbase collection, if any!
@@ -95,7 +101,7 @@ public class mongoprog2{
   // READ FROM DATABASE
   public static void read_from_db(){
 
-    MongoClient mongo_read = new MongoClient("172.50.88.22",27020);
+    MongoClient mongo_read = new MongoClient(host_ip,host_port);
     MongoCollection<Document> mongo_read_collection = mongo_read.getDatabase(write_database).getCollection(write_collection);
 
 
@@ -140,7 +146,7 @@ public class mongoprog2{
   // UPDATE THE DATABASE
   public static void update_db(){
 
-    MongoClient mongo_read = new MongoClient("172.50.88.22",27020);
+    MongoClient mongo_read = new MongoClient(host_ip,host_port);
     MongoCollection<Document> update_collection = mongo_read.getDatabase(write_database).getCollection(write_collection);
 
     Scanner in = new Scanner(System.in);
@@ -191,7 +197,7 @@ public class mongoprog2{
   // DELETE DATABASE
   public static void delete_db_records(){
 
-    MongoClient mongo_read = new MongoClient("172.50.88.22",27020);
+    MongoClient mongo_read = new MongoClient(host_ip,host_port);
     MongoCollection<Document> delete_collection = mongo_read.getDatabase(write_database).getCollection(write_collection);
 
     Scanner in = new Scanner(System.in);
