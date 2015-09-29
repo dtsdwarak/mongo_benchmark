@@ -1,5 +1,5 @@
 //javac -classpath library/*:. mongoprog2.java
-//java -classpath library/*:. mongoprog2 twitter aaron backup aaron localhost 27017 100
+//java -classpath library/*:. mongoprog2 twitter aaron cloud social 172.50.88.22 27020 100
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
@@ -47,14 +47,12 @@ public class mongoprog2{
     read_database = args[0]; read_collection = args[1]; write_database = args[2]; write_collection = args[3]; host_ip = args[4]; host_port = Integer.parseInt(args[5]); no_of_records = Integer.parseInt(args[6]);
 
     write_to_db();
-    /*
     TimeUnit.SECONDS.sleep(3);
     read_from_db();
     TimeUnit.SECONDS.sleep(3);
     update_db();
     TimeUnit.SECONDS.sleep(3);
     delete_db_records();
-    */
   }
 
   // WRITE TO DATABASE
@@ -68,34 +66,51 @@ public class mongoprog2{
     MongoClient mongo_write = new MongoClient(host_ip,host_port);
     MongoDatabase write_db = mongo_write.getDatabase(write_database);
 
-    //Deleting the exisiting WRITE datatbase collection, if any!
-    write_db.getCollection(write_collection).drop();
+    //TRUNCATE the exisiting WRITE database collection, should any records be there!
+    write_db.getCollection(write_collection).deleteMany(new Document());
 
     long totaltime=0,starttime,endtime;
     Document temp_read_record; //For the record that was currently read
 
-    System.out.println("Writing to Database. Please Wait.");
+    Scanner in = new Scanner(System.in);
+    int choice;
+    System.out.print("\n\n Insert into Database\n 1. 1-by-1\n 2. Bulk\n Enter your choice : ");
+    choice = in.nextInt();
 
-    while(read_cursor.hasNext()){
-      // System.out.println("writing");
-      temp_read_record = read_cursor.next();
+    switch(choice){
+      case 1:   System.out.println("Writing to Database 1-BY-1. Please wait.");
+                while(read_cursor.hasNext()){
+                  // Reading the cursor object into temp_read_record
+                  temp_read_record = read_cursor.next();
 
-      System.out.println(temp_read_record.getObjectId("_id"));
+                  //Store the "_id" field of the object written into Database for further use
+                  object_id_store.add(temp_read_record.getObjectId("_id"));
 
-      //Store the "_id" field of the object written into Database for further use
-      object_id_store.add(temp_read_record.getObjectId("_id"));
-
-      starttime = System.currentTimeMillis();
-      write_db.getCollection(write_collection).insertOne(temp_read_record);
-      endtime = System.currentTimeMillis();
-      totaltime += endtime - starttime;
-
+                  starttime = System.currentTimeMillis();
+                  write_db.getCollection(write_collection).insertOne(temp_read_record);
+                  endtime = System.currentTimeMillis();
+                  totaltime += endtime - starttime;
+                }
+                System.out.println("Total time to write = " + (float) totaltime/1000 + " seconds");
+                read_cursor.close();
+                break;
+      case 2:   System.out.println("Records being fetched");
+                ArrayList<Document> doc_array_list = new ArrayList<Document>();
+                while(read_cursor.hasNext()){
+                  temp_read_record = read_cursor.next();
+                  doc_array_list.add(temp_read_record);
+                  object_id_store.add(temp_read_record.getObjectId("_id"));
+                }
+                System.out.println("Writing to Database in BULK. Please Wait.");
+                starttime = System.currentTimeMillis();
+                write_db.getCollection(write_collection).insertMany(doc_array_list);
+                endtime = System.currentTimeMillis();
+                System.out.println("Total time to write = " + (float) (endtime-starttime)/1000 + " seconds");
+                break;
+      default:  System.out.println("Wrong Choice");
     }
 
-    System.out.println("Total time to write = " + (float) totaltime/1000 + " seconds");
-    read_cursor.close();
     // Writing Queries done
-
   }
 
   // READ FROM DATABASE
@@ -117,7 +132,7 @@ public class mongoprog2{
               while(read_cursor.hasNext()){
                 starttime = System.currentTimeMillis();
                 JSONObject JSON_DATA = new JSONObject (read_cursor.next().toJson());
-                System.out.println("Value = "+ JSON_DATA.getJSONObject("user").getString("name"));
+                // System.out.println("Value = "+ JSON_DATA.getJSONObject("user").getString("name"));
                 endtime = System.currentTimeMillis();
                 totaltime += endtime - starttime;
               }
@@ -132,7 +147,7 @@ public class mongoprog2{
                   @Override
                   public void apply(final Document document) {
                       JSONObject JSON_DATA = new JSONObject (document.toJson());
-                      System.out.println("Value = "+ JSON_DATA.getJSONObject("user").getString("name"));
+                      // System.out.println("Value = "+ JSON_DATA.getJSONObject("user").getString("name"));
                   }
               });
               System.out.println("Total Time to read records BULK = " + (float) (endtime - starttime)/1000 + " seconds");
