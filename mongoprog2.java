@@ -1,5 +1,5 @@
-//javac -classpath library/*:. mongoprog.java
-//java -classpath library/*:. mongoprog twitter aaron backup aaron
+//javac -classpath library/*:. mongoprog2.java
+//java -classpath library/*:. mongoprog2 twitter aaron backup aaron
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
@@ -10,15 +10,18 @@ import com.mongodb.client.FindIterable;
 
 import org.bson.Document; //For Document type
 import static com.mongodb.client.model.Filters.*;
+import org.bson.types.ObjectId; //For ObjectID store
 
 //Java packages
 import java.util.concurrent.TimeUnit; //For Time Wait
 import java.util.Scanner;
+import java.util.ArrayList; //For objectID store
+import java.util.Iterator;
 
 //Json Packages
 import org.json.JSONObject;
 
-public class mongoprog{
+public class mongoprog2{
 
   //Database parameters
   public static String read_database;
@@ -26,6 +29,8 @@ public class mongoprog{
   public static String write_database;
   public static String write_collection;
 
+  //ObjectID store
+  public static ArrayList<ObjectId> object_id_store = new ArrayList<ObjectId>();
 
   public static void main(String[] args) throws Exception  {
 
@@ -61,15 +66,24 @@ public class mongoprog{
     write_db.getCollection(write_collection).drop();
 
     long totaltime=0,starttime,endtime;
+    Document temp_read_record; //For the record that was currently read
 
     System.out.println("Writing to Database. Please Wait.");
 
     while(read_cursor.hasNext()){
       // System.out.println("writing");
+      temp_read_record = read_cursor.next();
+
+      System.out.println(temp_read_record.getObjectId("_id"));
+
+      //Store the "_id" field of the object written into Database for further use
+      object_id_store.add(temp_read_record.getObjectId("_id"));
+
       starttime = System.currentTimeMillis();
-      write_db.getCollection(write_collection).insertOne(read_cursor.next());
+      write_db.getCollection(write_collection).insertOne(temp_read_record);
       endtime = System.currentTimeMillis();
       totaltime += endtime - starttime;
+
     }
 
     System.out.println("Total time to write = " + (float) totaltime/1000 + " seconds");
@@ -94,7 +108,7 @@ public class mongoprog{
 
     switch(choice){
       case 1: System.out.println("Reading Database 1-BY-1");
-              MongoCursor<Document> read_cursor = mongo_read_collection.find().iterator();
+              MongoCursor<Document> read_cursor = mongo_read_collection.find(new Document("_id",new Document("$in",object_id_store))).iterator();
               while(read_cursor.hasNext()){
                 starttime = System.currentTimeMillis();
                 JSONObject JSON_DATA = new JSONObject (read_cursor.next().toJson());
@@ -107,7 +121,7 @@ public class mongoprog{
               break;
       case 2: System.out.println("Reading Database in BULK");
               starttime = System.currentTimeMillis();
-              FindIterable<Document> iterable = mongo_read_collection.find();
+              FindIterable<Document> iterable = mongo_read_collection.find(new Document("_id",new Document("$in",object_id_store)));
               endtime = System.currentTimeMillis();
               iterable.forEach(new Block<Document>() {
                   @Override
@@ -136,24 +150,38 @@ public class mongoprog{
 
     long starttime,endtime;
 
+    //Iterator for object_id_store
+    Iterator<ObjectId> object_iterator = object_id_store.iterator();
+
+
     switch(choice){
       case 1:  System.out.println("Updating Database 1-BY-1");
                starttime = System.currentTimeMillis();
-               while(update_collection.updateOne( new Document("id", new Document("$ne","NumberLong(100101102103104105)")), new Document("$set",new Document("id","NumberLong(100101102103104105)")) ).getModifiedCount()!=0);
+
+               while(object_iterator.hasNext()){
+                 update_collection.updateOne( new Document("_id",object_iterator.next()), new Document("$set",new Document("id","NumberLong(100101102103104105)")) );
+               }
+
+              //  while(update_collection.updateOne( new Document("_id",new Document("$in",object_id_store)), new Document("$set",new Document("id","NumberLong(100101102103104105)")) ).getModifiedCount()!=0);
                endtime = System.currentTimeMillis();
                System.out.println("Total Time to update records 1-by-1 = " + (float) (endtime-starttime)/1000 + " seconds");
                break;
       case 2:  System.out.println("Updating Database BULK");
                starttime = System.currentTimeMillis();
-               update_collection.updateMany( new Document(), new Document("$set", new Document("id","NumberLong(100101102103104105)")) );
+               update_collection.updateMany( new Document("_id",new Document("$in",object_id_store)), new Document("$set", new Document("id","NumberLong(100101102103104105)")) );
                endtime = System.currentTimeMillis();
-               System.out.println("Total Time to update all records = " + (float) (endtime-starttime)/1000 + " seconds");
+               System.out.println("Total Time to update all records by BULK = " + (float) (endtime-starttime)/1000 + " seconds");
                break;
       case 3:  System.out.println("Updating Database by REPLACE");
                starttime = System.currentTimeMillis();
-               while(update_collection.replaceOne( new Document("id", new Document("$ne","NumberLong(100101102103104105)")), new Document("id","NumberLong(100101102103104105)") ).getModifiedCount()!=0);
+
+               while(object_iterator.hasNext()){
+                 update_collection.replaceOne( new Document("_id",object_iterator.next()), new Document("$set",new Document("id","NumberLong(100101102103104105)")) );
+               }
+
+              //  while(update_collection.replaceOne( new Document("id", new Document("$ne","NumberLong(100101102103104105)")), new Document("id","NumberLong(100101102103104105)") ).getModifiedCount()!=0);
                endtime = System.currentTimeMillis();
-               System.out.println("Total Time to update all records = " + (float) (endtime-starttime)/1000 + " seconds");
+               System.out.println("Total Time to update all records by REPLACE = " + (float) (endtime-starttime)/1000 + " seconds");
                break;
       default: System.out.println("Wrong choice");
     }
@@ -176,13 +204,19 @@ public class mongoprog{
     switch(choice){
       case 1: System.out.println("Delete Database 1-BY-1");
               starttime = System.currentTimeMillis();
-              while(delete_collection.deleteOne(new Document()).getDeletedCount()!=0);
+
+              Iterator<ObjectId> object_iterator = object_id_store.iterator();
+              while(object_iterator.hasNext()){
+                delete_collection.deleteOne( new Document("_id",object_iterator.next()) );
+              }
+
+              // while(delete_collection.deleteOne(new Document()).getDeletedCount()!=0);
               endtime = System.currentTimeMillis();
               System.out.println(" Total time to delete all records 1-BY-1 = " + (float) (endtime-starttime)/1000 + " seconds");
               break;
       case 2: System.out.println("Delete Database BULK");
               starttime = System.currentTimeMillis();
-              delete_collection.deleteMany(new Document());
+              delete_collection.deleteMany(new Document("_id",new Document("$in",object_id_store)));
               endtime = System.currentTimeMillis();
               System.out.println(" Total time to delete all records BULK = " + (float) (endtime-starttime)/1000 + " seconds");
               break;
