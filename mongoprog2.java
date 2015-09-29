@@ -104,7 +104,6 @@ public class mongoprog2{
     MongoClient mongo_read = new MongoClient(host_ip,host_port);
     MongoCollection<Document> mongo_read_collection = mongo_read.getDatabase(write_database).getCollection(write_collection);
 
-
     long totaltime=0,starttime,endtime;
 
     Scanner in = new Scanner(System.in);
@@ -133,7 +132,8 @@ public class mongoprog2{
                   @Override
                   public void apply(final Document document) {
                       JSONObject JSON_DATA = new JSONObject (document.toJson());
-                      System.out.println("Value = "+ JSON_DATA.getJSONObject("user").getString("name"));                  }
+                      System.out.println("Value = "+ JSON_DATA.getJSONObject("user").getString("name"));
+                  }
               });
               System.out.println("Total Time to read records BULK = " + (float) (endtime - starttime)/1000 + " seconds");
               break;
@@ -168,7 +168,6 @@ public class mongoprog2{
                  update_collection.updateOne( new Document("_id",object_iterator.next()), new Document("$set",new Document("id","NumberLong(100101102103104105)")) );
                }
 
-              //  while(update_collection.updateOne( new Document("_id",new Document("$in",object_id_store)), new Document("$set",new Document("id","NumberLong(100101102103104105)")) ).getModifiedCount()!=0);
                endtime = System.currentTimeMillis();
                System.out.println("Total Time to update records 1-by-1 = " + (float) (endtime-starttime)/1000 + " seconds");
                break;
@@ -185,7 +184,6 @@ public class mongoprog2{
                  update_collection.replaceOne( new Document("_id",object_iterator.next()), new Document("$set",new Document("id","NumberLong(100101102103104105)")) );
                }
 
-              //  while(update_collection.replaceOne( new Document("id", new Document("$ne","NumberLong(100101102103104105)")), new Document("id","NumberLong(100101102103104105)") ).getModifiedCount()!=0);
                endtime = System.currentTimeMillis();
                System.out.println("Total Time to update all records by REPLACE = " + (float) (endtime-starttime)/1000 + " seconds");
                break;
@@ -216,7 +214,6 @@ public class mongoprog2{
                 delete_collection.deleteOne( new Document("_id",object_iterator.next()) );
               }
 
-              // while(delete_collection.deleteOne(new Document()).getDeletedCount()!=0);
               endtime = System.currentTimeMillis();
               System.out.println(" Total time to delete all records 1-BY-1 = " + (float) (endtime-starttime)/1000 + " seconds");
               break;
